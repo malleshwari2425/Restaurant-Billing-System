@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Malleshwari Restaurant</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand__logo" aria-hidden="true">RB</div>
+        <div class="brand__text">
+          <div class="brand__title">Restaurant Billing </div>
+          <div class="brand__subtitle">Menu • Cart • Billing • Reports</div>
+        </div>
+      </div>
+
+      <nav class="tabs" aria-label="Primary">
+        <button class="tab is-active" data-tab="pos" type="button">Billing</button>
+        <button class="tab" data-tab="manage" type="button">Manage menu</button>
+        <button class="tab" data-tab="reports" type="button">Monthly report</button>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="view is-active" id="view-pos" aria-label="Billing view">
+        <div class="grid">
+          <section class="panel">
+            <div class="panel__header">
+              <h2 class="panel__title">Menu</h2>
+              <div class="panel__tools">
+                <input id="menuSearch" class="input" placeholder="Search menu…" autocomplete="off" />
+                <select id="menuSort" class="select" aria-label="Sort menu">
+                  <option value="name">Sort: Name</option>
+                  <option value="priceAsc">Sort: Price (low)</option>
+                  <option value="priceDesc">Sort: Price (high)</option>
+                </select>
+              </div>
+            </div>
+            <div id="menuGrid" class="menu-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <h2 class="panel__title">Cart</h2>
+              <div class="panel__tools">
+                <button id="clearCartBtn" class="btn btn--ghost" type="button">Clear cart</button>
+              </div>
+            </div>
+
+            <div id="cartEmpty" class="empty">
+              Click a menu item to add it to the cart.
+            </div>
+
+            <div class="cart">
+              <div id="cartItems" class="cart__items"></div>
+
+              <div class="cart__summary">
+                <div class="summary-row">
+                  <div class="summary-label">Subtotal</div>
+                  <div id="subtotal" class="summary-value">₹0.00</div>
+                </div>
+                <div class="summary-row">
+                  <label class="summary-label" for="discountAmount">Discount (₹)</label>
+                  <input id="discountAmount" class="input input--sm" type="number" min="0" step="1" value="0" />
+                </div>
+                <div class="summary-row summary-row--total">
+                  <div class="summary-label">Total</div>
+                  <div id="total" class="summary-value">₹0.00</div>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button id="printBillBtn" class="btn btn--ghost" type="button">Print bill</button>
+                <button id="payNowBtn" class="btn btn--primary" type="button">Pay now (QR)</button>
+                <button id="completeSaleBtn" class="btn btn--success" type="button">Complete sale</button>
+              </div>
+
+              <div id="payBox" class="paybox" hidden>
+                <div class="paybox__head">
+                  <div>
+                    <div class="paybox__title">Scan to pay</div>
+                    <div id="payHint" class="paybox__hint">Amount is based on current total.</div>
+                  </div>
+                  <button id="closePayBoxBtn" class="icon-btn" type="button" aria-label="Close payment box">✕</button>
+                </div>
+
+                <div class="paybox__body">
+                  <div class="paybox__inputs">
+                    <label class="field">
+                      <span class="field__label">Payee name</span>
+                      <input id="payeeName" class="input" value="My Restaurant" />
+                    </label>
+                    <div class="field">
+                      <span class="field__label">UPI ID</span>
+                      <div id="staticUpiId" class="input" role="textbox" aria-readonly="true"></div>
+                    </div>
+                    <label class="field">
+                      <span class="field__label">Note (optional)</span>
+                      <input id="payNote" class="input" placeholder="Table 2 / Order 15" />
+                    </label>
+                    <button id="refreshQrBtn" class="btn btn--ghost" type="button">Refresh QR</button>
+                  </div>
+
+                  <div class="paybox__qr">
+                    <img id="qrImg" class="qr" alt="Payment QR code" />
+                    <div id="qrFallback" class="small-muted" hidden>
+                      If QR doesn’t load, check internet or refresh.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-manage" aria-label="Manage menu view">
+        <section class="panel">
+          <div class="panel__header">
+            <h2 class="panel__title">Manage menu (CRUD)</h2>
+            <div class="panel__tools">
+              <button id="resetMenuBtn" class="btn btn--ghost" type="button">Reset to defaults</button>
+              <button id="exportMenuBtn" class="btn btn--ghost" type="button">Export JSON</button>
+              <label class="btn btn--ghost file-btn">
+                Import JSON
+                <input id="importMenuInput" type="file" accept="application/json" hidden />
+              </label>
+            </div>
+          </div>
+
+          <form id="menuForm" class="form" autocomplete="off">
+            <input id="menuId" type="hidden" />
+
+            <label class="field">
+              <span class="field__label">Item name</span>
+              <input id="menuName" class="input" required placeholder="e.g., Idly" />
+            </label>
+
+            <label class="field">
+              <span class="field__label">Price (₹)</span>
+              <input id="menuPrice" class="input" type="number" min="0" step="1" required value="0" />
+            </label>
+
+            <label class="field">
+              <span class="field__label">Image URL (optional)</span>
+              <input id="menuImageUrl" class="input" placeholder="https://…" />
+              <span class="small-muted">Tip: paste an image URL from any website.</span>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Or upload image (optional)</span>
+              <input id="menuImageFile" class="input" type="file" accept="image/*" />
+              <span class="small-muted">Uploads are stored locally in this browser.</span>
+            </label>
+
+            <label class="field field--wide">
+              <span class="field__label">Store URL image locally</span>
+              <div class="check">
+                <input id="storeUrlImageLocally" type="checkbox" checked />
+                <span class="small-muted">Downloads the image and saves it to localStorage.</span>
+              </div>
+            </label>
+
+            <label class="field field--wide">
+              <span class="field__label">Category (optional)</span>
+              <input id="menuCategory" class="input" placeholder="Breakfast / Snacks…" />
+            </label>
+
+            <div class="form__actions">
+              <button id="saveMenuBtn" class="btn btn--primary" type="submit">Save item</button>
+              <button id="cancelEditBtn" class="btn btn--ghost" type="button" hidden>Cancel edit</button>
+            </div>
+          </form>
+
+          <div class="divider"></div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th class="right">Price</th>
+                  <th>Category</th>
+                  <th>Image</th>
+                  <th class="right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="menuTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="view" id="view-reports" aria-label="Reports view">
+        <section class="panel">
+          <div class="panel__header">
+            <h2 class="panel__title">Monthly sales report</h2>
+            <div class="panel__tools">
+              <input id="reportMonth" class="input" type="month" />
+              <button id="exportSalesBtn" class="btn btn--ghost" type="button">Export sales CSV</button>
+              <button id="clearSalesBtn" class="btn btn--danger" type="button">Clear sales data</button>
+            </div>
+          </div>
+
+          <div class="report-cards">
+            <div class="card">
+              <div class="card__label">Orders</div>
+              <div id="reportOrders" class="card__value">0</div>
+            </div>
+            <div class="card">
+              <div class="card__label">Gross sales</div>
+              <div id="reportGross" class="card__value">₹0.00</div>
+            </div>
+            <div class="card">
+              <div class="card__label">Average order</div>
+              <div id="reportAvg" class="card__value">₹0.00</div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date/Time</th>
+                  <th>Items</th>
+                  <th class="right">Total</th>
+                </tr>
+              </thead>
+              <tbody id="salesTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="printArea" class="print" aria-hidden="true">
+        <div class="receipt">
+          <div class="receipt__head">
+            <div class="receipt__title" id="receiptRestaurant">My Restaurant</div>
+            <div class="receipt__meta">
+              <div id="receiptDate"></div>
+              <div id="receiptOrderId"></div>
+            </div>
+          </div>
+
+          <div class="receipt__body">
+            <table class="receipt__table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th class="right">Qty</th>
+                  <th class="right">Amt</th>
+                </tr>
+              </thead>
+              <tbody id="receiptItems"></tbody>
+            </table>
+
+            <div class="receipt__totals">
+              <div class="receipt__row">
+                <div>Subtotal</div>
+                <div id="receiptSubtotal" class="right"></div>
+              </div>
+              <div class="receipt__row">
+                <div>Discount</div>
+                <div id="receiptDiscount" class="right"></div>
+              </div>
+              <div class="receipt__row receipt__row--total">
+                <div>Total</div>
+                <div id="receiptTotal" class="right"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="receipt__foot">Thank you!</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="small-muted">
+        Data is stored in your browser (localStorage). For multi-device billing, you’d need a backend.
+      </div>
+    </footer>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
